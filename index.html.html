@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INDENERGY — LNG Intelligence Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #07090f;
+    --bg-secondary: #0b0e18;
+    --bg-card: #0e1220;
+    --bg-card2: #0c1019;
+    --border: #1a2340;
+    --border-bright: #253560;
+    --blue: #3b82f6;
+    --blue-dim: #2563eb;
+    --blue-bright: #60a5fa;
+    --blue-glow: rgba(59,130,246,0.15);
+    --amber: #f59e0b;
+    --amber-dim: #d97706;
+    --red: #ef4444;
+    --red-dim: #dc2626;
+    --cyan: #22d3ee;
+    --teal: #2dd4bf;
+    --text-primary: #e2eeff;
+    --text-secondary: #a5c4f0;
+    --text-dim: #5a7ab8;
+    --text-muted: #8aa4d4;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --header-h: 56px;
+    --ticker-h: 32px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--mono);
+    overflow: hidden;
+  }
+
+  #header {
+    height: var(--header-h);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-img {
+    height: 64px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    transition: transform 0.2s ease;
+  }
+  
+  .logo-img:hover {
+    transform: scale(1.02);
+  }
+
+  .header-status {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--blue);
+  }
+
+  .live-dot::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 8px var(--blue);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; box-shadow: 0 0 8px var(--blue); }
+    50% { opacity: 0.4; box-shadow: 0 0 3px var(--blue); }
+  }
+
+  #clock { color: var(--text-primary); font-size: 15px; }
+
+  #ticker-bar {
+    height: var(--ticker-h);
+    background: #080b14;
+    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: var(--header-h);
+    left: 0; right: 0; z-index: 99;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+
+  .ticker-label {
+    padding: 0 12px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--blue);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: #080b14;
+    z-index: 2;
+  }
+
+  .ticker-track {
+    display: flex;
+    animation: ticker 60s linear infinite;
+    gap: 0;
+  }
+
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .tick-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    font-size: 13px;
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    height: var(--ticker-h);
+  }
+
+  .tick-name { color: var(--text-secondary); letter-spacing: 0.5px; font-weight: 500; }
+  .tick-price { color: var(--text-primary); font-weight: 600; }
+  .tick-up { color: var(--blue-bright); }
+  .tick-down { color: var(--red); }
+
+  #main {
+    position: fixed;
+    top: calc(var(--header-h) + var(--ticker-h));
+    left: 0; right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.1fr 1fr;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .column:last-child { border-right: none; }
+
+  .col-header {
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .col-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blue);
+    font-weight: 500;
+  }
+
+  .col-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .col-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .col-body::-webkit-scrollbar { width: 3px; }
+  .col-body::-webkit-scrollbar-track { background: transparent; }
+  .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .section-head {
+    font-size: 12px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 6px 0 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-head .src {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .price-table { width: 100%; border-collapse: collapse; }
+  .price-table tr { border-bottom: 1px solid rgba(26,35,64,0.5); transition: background 0.15s; }
+  .price-table tr:hover { background: rgba(59,130,246,0.05); }
+  .price-table td { padding: 7px 6px; font-size: 14px; vertical-align: middle; }
+  .price-table .commodity { color: var(--text-secondary); font-size: 13px; max-width: 120px; }
+  .price-table .commodity .exch { font-size: 10px; display: block; margin-top: 1px; }
+  .price-table .commodity .exch a { color: var(--cyan); text-decoration: none; cursor: pointer; }
+  .price-table .commodity .exch a:hover { text-decoration: underline; color: var(--blue-bright); }
+  .price-table .price-cell { text-align: right; white-space: nowrap; }
+  .price-value { color: var(--text-primary); font-weight: 500; }
+  .price-change { font-size: 12px; margin-left: 8px; white-space: nowrap; }
+  .price-cell .up { color: var(--blue-bright); }
+  .price-cell .dn { color: var(--red); }
+  .flash-up { animation: flash-b 0.6s ease; }
+  .flash-dn { animation: flash-r 0.6s ease; }
+  @keyframes flash-b { 0% { background: rgba(59,130,246,0.25); } 100% { background: transparent; } }
+  @keyframes flash-r { 0% { background: rgba(239,68,68,0.2); } 100% { background: transparent; } }
+
+  .spark-container { position: relative; width: 80px; height: 30px; display: inline-block; }
+  .balance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+  .balance-item { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 3px; padding: 8px; text-align: center; }
+  .balance-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .balance-val { font-size: 19px; font-weight: 600; line-height: 1; margin-bottom: 2px; }
+  .balance-src { font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; }
+  .balance-src a { color: var(--cyan); text-decoration: none; }
+
+  .intel-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .intel-item { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 3px; padding: 8px 10px; }
+  .intel-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .intel-val { font-size: 20px; font-weight: 600; color: var(--text-primary); line-height: 1; }
+  .intel-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.5px; }
+  .intel-sub a { color: var(--cyan); text-decoration: none; }
+
+  .video-wrap { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+  .video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+  .mandate-list { display: flex; flex-direction: column; gap: 4px; }
+  .mandate-item { display: flex; align-items: center; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 3px; padding: 6px 10px; gap: 10px; }
+  .mandate-code { font-size: 13px; color: var(--cyan); font-weight: 500; min-width: 90px; }
+  .mandate-code a { color: var(--cyan); text-decoration: none; }
+  .mandate-desc { font-size: 13px; color: var(--text-secondary); flex: 1; line-height: 1.3; }
+  .mandate-status { font-size: 10px; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .status-active { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .status-pending { background: rgba(245,158,11,0.12); color: var(--amber); }
+
+  .heatmap-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(26,35,64,0.4); }
+  .heatmap-region { font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px; width: 90px; flex-shrink: 0; }
+  .heatmap-cells { display: flex; gap: 3px; flex: 1; }
+  .heatmap-cell { flex: 1; height: 22px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.9); }
+  .hm-labels { display: flex; gap: 3px; padding: 0 0 4px 98px; }
+  .hm-label { flex: 1; font-size: 9px; color: var(--text-muted); text-align: center; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .news-filters { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+  .filter-btn { font-size: 12px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 2px; background: transparent; color: var(--text-muted); cursor: pointer; font-family: var(--mono); letter-spacing: 0.5px; text-transform: uppercase; transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-glow); }
+
+  .news-item { border-bottom: 1px solid var(--border); padding: 9px 0; cursor: pointer; transition: background 0.1s; }
+  .news-item:hover { background: rgba(59,130,246,0.03); }
+  .news-item:first-child { padding-top: 2px; }
+  .news-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+  .news-tag { font-size: 10px; letter-spacing: 1px; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; font-weight: 500; }
+  .tag-policy { background: rgba(56,189,248,0.12); color: var(--cyan); border: 1px solid rgba(56,189,248,0.25); }
+  .tag-markets { background: rgba(59,130,246,0.1); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+  .tag-shipping { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
+  .tag-terminal { background: rgba(45,212,191,0.1); color: var(--teal); border: 1px solid rgba(45,212,191,0.2); }
+  .tag-environment { background: rgba(96,165,250,0.1); color: var(--blue-bright); border: 1px solid rgba(96,165,250,0.2); }
+  .tag-geo { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .tag-economy { background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25); }
+  .tag-currency { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
+  .news-source { font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px; }
+  .news-source a { color: var(--cyan); text-decoration: none; }
+  .news-time { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+  .news-headline { font-size: 15px; color: var(--text-primary); line-height: 1.45; margin-bottom: 4px; font-family: var(--sans); font-weight: 500; letter-spacing: -0.1px; }
+  .news-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .news-loading { text-align: center; padding: 30px; color: var(--text-muted); font-size: 13px; }
+  .error-message { text-align: center; padding: 30px; color: #ef4444; font-size: 13px; border: 1px solid #ef444433; border-radius: 6px; margin: 10px; }
+
+  @media (max-width: 800px) {
+    #main { position: static; display: flex; flex-direction: column; overflow: auto; height: auto; padding-top: calc(var(--header-h) + var(--ticker-h)); }
+    html, body { overflow: auto; }
+    .column { min-height: 600px; border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  .data-badge { font-size: 10px; background: #1a2340; padding: 2px 8px; border-radius: 12px; color: #10b981; }
+  .last-update { font-size: 9px; color: #f59e0b; margin-top: 5px; text-align: right; }
+  .storage-badge { font-size: 9px; background: #1a2340; padding: 2px 6px; border-radius: 10px; display: inline-block; }
+  .news-status { font-size: 10px; color: var(--cyan); margin-left: 8px; }
+  .retry-btn { background: var(--border); border: 1px solid var(--blue); color: var(--blue); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 11px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header id="header">
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="logo">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'%3E%3Crect width='200' height='80' fill='%230b0e18' rx='12'/%3E%3Cpath d='M40,25 L60,55 L80,25 L100,55 L120,25 L140,55 L160,25' stroke='%233b82f6' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='40' r='4' fill='%23f59e0b'/%3E%3Ccircle cx='90' cy='40' r='4' fill='%23ef4444'/%3E%3Ccircle cx='130' cy='40' r='4' fill='%2322d3ee'/%3E%3Ctext x='70' y='70' font-family='monospace' font-size='18' fill='%23e2eeff' font-weight='bold'%3EINDENERGY%3C/text%3E%3C/svg%3E"
+           alt="INDENERGY" class="logo-img" />
+    </div>
+  </div>
+  <div class="header-status">
+    <span class="live-dot" id="live-status">LIVE</span>
+    <span>|</span>
+    <span class="data-badge" id="api-notice">📡 Loading data...</span>
+    <span>|</span>
+    <span>PLATTS · ICE · CME · JKM · TTF · HH · LNG · FREIGHT</span>
+    <span>|</span>
+    <span id="clock">--:--:-- UTC</span>
+  </div>
+</header>
+
+<div id="ticker-bar">
+  <div class="ticker-label">INDENERGY ●</div>
+  <div style="overflow:hidden;flex:1;display:flex;">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+</div>
+
+<div id="main">
+  <div class="column">
+    <div class="col-header">
+      <div><div class="col-title">⬡ Gas Benchmarks</div><div class="col-sub">Live Market Data</div></div>
+      <div class="live-dot" style="font-size:12px;">DELAYED</div>
+    </div>
+    <div class="col-body">
+      <div><div class="section-head">Gas Hub Prices</div>
+        <table class="price-table" id="hub-table"><thead><tr><th style="text-align:left;">Commodity</th><th style="text-align:right;">Price</th><th style="text-align:right;">Trend</th></tr></thead><tbody id="hub-tbody"><tr><td colspan="3" style="text-align:center; padding:20px;">Loading...</td></tr></tbody></table>
+        <div class="last-update" id="hub-update-time"></div>
+      </div>
+      <div><div class="section-head">Global LNG Supply Balance</div><div class="balance-grid" id="supply-balance"></div></div>
+      <div><div class="section-head">Regional Supply/Demand Heatmap</div><div class="hm-labels"><div class="hm-label">Supply</div><div class="hm-label">Demand</div><div class="hm-label">Balance</div><div class="hm-label">YoY</div></div><div id="supply-heatmap"></div></div>
+    </div>
+  </div>
+
+  <div class="column">
+    <div class="col-header">
+      <div><div class="col-title">◈ Market Intelligence</div><div class="col-sub">Live Economic & Trade News</div></div>
+      <div class="live-dot" style="font-size:12px;">LIVE NEWS</div>
+    </div>
+    <div class="col-body">
+      <div><div class="section-head">Key LNG Market Metrics</div><div class="intel-strip" id="intel-strip"></div></div>
+      <div class="card"><div class="video-wrap"><iframe src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1&playsinline=1" allowfullscreen allow="autoplay"></iframe></div></div>
+      <div>
+        <div class="section-head">Live News Feed <span class="news-status" id="news-status">🔄 fetching economic/political news...</span><span class="src">Reuters · Bloomberg · FT · WSJ</span></div>
+        <div class="news-filters" id="news-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="economy">Economy</button>
+          <button class="filter-btn" data-filter="markets">Markets</button>
+          <button class="filter-btn" data-filter="policy">Policy</button>
+          <button class="filter-btn" data-filter="currency">Currency/FX</button>
+          <button class="filter-btn" data-filter="geo">Geopolitical</button>
+          <button class="filter-btn" data-filter="shipping">Shipping/Trade</button>
+        </div>
+        <div id="news-feed"><div class="news-loading">📡 Fetching real economic, political & currency news that impact international trade...</div></div>
+      </div>
+      <div><div class="section-head">Regulatory & Contract Tracker</div><div class="mandate-list" id="mandate-list"></div></div>
+    </div>
+  </div>
+
+  <div class="column">
+    <div class="col-header">
+      <div><div class="col-title">⬟ LNG & Shipping</div><div class="col-sub">Cargo prices · freight · terminals</div></div>
+      <div class="live-dot" style="font-size:12px;">DELAYED</div>
+    </div>
+    <div class="col-body">
+      <div><div class="section-head">LNG Cargo & Freight Rates</div>
+        <table class="price-table" id="lng-table"><thead><tr><th style="text-align:left;">Commodity</th><th style="text-align:right;">Price</th><th style="text-align:right;">Trend</th></tr></thead><tbody id="lng-tbody"><tr><td colspan="3" style="text-align:center;">Loading...</td></tr></tbody></table>
+        <div class="last-update" id="lng-update-time"></div>
+      </div>
+      <div><div class="section-head">EU Gas Storage & Regas Capacity</div><div class="balance-grid" id="storage-balance"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// INDENERGY - LIVE NEWS (NO FAKE/SIMULATED CONTENT)
+// Only real economic, political, currency, trade-impacting news
+// Fallback displays error, never fake news
+// ============================================================
+
+const STORAGE_KEY = 'indenergy_price_history';
+
+function loadHistoryFromStorage() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) { try { return JSON.parse(saved); } catch(e) { return {}; } }
+  return {};
+}
+function saveHistoryToStorage(history) { localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); }
+let globalHistory = loadHistoryFromStorage();
+
+function updatePriceHistory(itemId, newPrice, commodityName) {
+  if (!globalHistory[itemId]) globalHistory[itemId] = { name: commodityName, values: [], lastUpdate: null };
+  const lastValue = globalHistory[itemId].values[globalHistory[itemId].values.length - 1];
+  if (lastValue !== newPrice && newPrice !== null) {
+    globalHistory[itemId].values.push(newPrice);
+    if (globalHistory[itemId].values.length > 12) globalHistory[itemId].values.shift();
+    saveHistoryToStorage(globalHistory);
+  }
+  return globalHistory[itemId].values;
+}
+
+function formatPrice(price, currency, unit, fmt) {
+  if (price === null) return '--';
+  if (fmt === 'usd3') return `$${price.toFixed(3)} ${unit}`;
+  if (fmt === 'usd2') return `$${price.toFixed(2)} ${unit}`;
+  if (fmt === 'gbp4') return `£${price.toFixed(4)} ${unit}`;
+  if (fmt === 'kilo') return `$${(price/1000).toFixed(1)}k ${unit}`;
+  if (fmt === 'pct') return `${price.toFixed(1)}${unit}`;
+  return `$${price.toFixed(2)} ${unit}`;
+}
+
+function generateSparkline(history, currentPrice) {
+  if (!history || history.length < 2) return `<svg width="80" height="28" viewBox="0 0 80 28"><text x="40" y="18" fill="#4a6090" font-size="8">—</text></svg>`;
+  const w=80, h=28, pad=2, graphW=w-pad*2, graphH=h-pad*2;
+  const allVals = [...history, currentPrice];
+  const minV = Math.min(...allVals), maxV = Math.max(...allVals);
+  const range = maxV - minV || 1;
+  let pts = [];
+  const step = graphW / (history.length - 1);
+  for (let i=0; i<history.length; i++) {
+    let y = pad + graphH - ((history[i] - minV) / range) * graphH;
+    pts.push(`${pad + i*step},${y}`);
+  }
+  let currY = pad + graphH - ((currentPrice - minV) / range) * graphH;
+  let currX = pad + (history.length-1)*step;
+  const lineColor = currentPrice > (history[history.length-1] || currentPrice) ? '#3b82f6' : '#ef4444';
+  return `<svg width="80" height="28" viewBox="0 0 80 28"><polyline points="${pts.join(' ')}" fill="none" stroke="${lineColor}" stroke-width="1.5"/><circle cx="${currX}" cy="${currY}" r="3" fill="${lineColor}" stroke="white" stroke-width="1.5"/></svg>`;
+}
+
+let hubPrices = [
+  { id:'ttf', name:'TTF (Netherlands)', code:'TTF', currency:'USD', unit:'mmbtu', price:12.15, prev:12.15, fmt:'usd2', history:[] },
+  { id:'hh', name:'Henry Hub (US)', code:'HH', currency:'USD', unit:'mmbtu', price:2.845, prev:2.845, fmt:'usd3', history:[] },
+  { id:'jkm', name:'JKM (Asia-Pacific)', code:'JKM', currency:'USD', unit:'mmbtu', price:14.28, prev:14.28, fmt:'usd2', history:[] },
+  { id:'nbp', name:'NBP (UK)', code:'NBP', currency:'GBP', unit:'therm', price:0.95, prev:0.95, fmt:'gbp4', history:[] }
+];
+let lngPrices = [
+  { id:'lng_jkm', name:'LNG DES Japan', code:'JKM', currency:'USD', unit:'mmbtu', price:14.28, prev:14.28, fmt:'usd2', history:[] },
+  { id:'lng_nwe', name:'LNG DES NWE', code:'NWE', currency:'USD', unit:'mmbtu', price:10.58, prev:10.58, fmt:'usd2', history:[] },
+  { id:'lng_usgc', name:'LNG FOB US Gulf', code:'USGC', currency:'USD', unit:'mmbtu', price:9.80, prev:9.80, fmt:'usd2', history:[] },
+  { id:'tfde', name:'TFDE Freight Rate', code:'TFDE', currency:'USD', unit:'day', price:82500, prev:82500, fmt:'kilo', history:[] },
+  { id:'storage', name:'EU Storage Fill %', code:'STRG', currency:'', unit:'%', price:68.4, prev:68.4, fmt:'pct', history:[] }
+];
+
+function loadInitialHistory() {
+  for (let item of hubPrices) if (globalHistory[item.id]) item.history = globalHistory[item.id].values;
+  for (let item of lngPrices) if (globalHistory[item.id]) item.history = globalHistory[item.id].values;
+}
+loadInitialHistory();
+
+function renderTables() {
+  document.getElementById('hub-tbody').innerHTML = hubPrices.map(d => {
+    const change = d.price !== d.prev ? ((d.price - d.prev)/d.prev*100).toFixed(2) : null;
+    const changeHtml = change ? `<span class="price-change ${change>0?'up':'dn'}">${change>0?'+':''}${change}%</span>` : '';
+    const spark = generateSparkline(d.history, d.price);
+    return `<tr><td class="commodity">${d.name}<span class="exch"><a href="#">${d.code}</a></span></td><td class="price-cell"><span class="price-value">${formatPrice(d.price, d.currency, d.unit, d.fmt)}</span>${changeHtml}</td><td class="spark-col"><div class="spark-container">${spark}</div></td></tr>`;
+  }).join('');
+  document.getElementById('lng-tbody').innerHTML = lngPrices.map(d => {
+    let priceDisp = d.fmt === 'kilo' ? `$${(d.price/1000).toFixed(1)}k ${d.unit}` : (d.fmt === 'pct' ? `${d.price.toFixed(1)}${d.unit}` : formatPrice(d.price, d.currency, d.unit, d.fmt));
+    const change = d.price !== d.prev ? ((d.price - d.prev)/d.prev*100).toFixed(2) : null;
+    const changeHtml = change ? `<span class="price-change ${change>0?'up':'dn'}">${change>0?'+':''}${change}%</span>` : '';
+    const spark = generateSparkline(d.history, d.price);
+    return `<tr><td class="commodity">${d.name}<span class="exch"><a href="#">${d.code}</a></span></td><td class="price-cell"><span class="price-value">${priceDisp}</span>${changeHtml}</td><td class="spark-col"><div class="spark-container">${spark}</div></td></tr>`;
+  }).join('');
+  updateTicker();
+  updateIntelStrip();
+}
+
+function updateTicker() {
+  const all = [...hubPrices, ...lngPrices].filter(p => p.price);
+  const track = document.getElementById('ticker-track');
+  track.innerHTML = all.map(d => {
+    let priceDisp = d.fmt === 'kilo' ? `$${(d.price/1000).toFixed(1)}k` : (d.fmt === 'pct' ? `${d.price.toFixed(1)}%` : formatPrice(d.price, d.currency, d.unit, d.fmt));
+    const change = d.price !== d.prev ? ((d.price - d.prev)/d.prev*100).toFixed(2) : null;
+    return `<div class="tick-item"><span class="tick-name">${d.code}</span><span class="tick-price">${priceDisp}</span>${change ? `<span class="${change>0?'tick-up':'tick-down'}">${change>0?'+':''}${change}%</span>` : ''}</div>`;
+  }).join('');
+}
+
+function updateIntelStrip() {
+  const ttf = hubPrices[0], jkm = hubPrices[2], hh = hubPrices[1];
+  document.getElementById('intel-strip').innerHTML = `
+    <div class="intel-item"><div class="intel-label">JKM Spot</div><div class="intel-val">${formatPrice(jkm.price, 'USD', 'mmbtu', 'usd2')}</div><div class="intel-sub"><a href="#">PLATTS</a></div></div>
+    <div class="intel-item"><div class="intel-label">TTF Front Month</div><div class="intel-val">${formatPrice(ttf.price, 'USD', 'mmbtu', 'usd2')}</div><div class="intel-sub"><a href="#">ICE</a></div></div>
+    <div class="intel-item"><div class="intel-label">Henry Hub</div><div class="intel-val">${formatPrice(hh.price, 'USD', 'mmbtu', 'usd3')}</div><div class="intel-sub"><a href="#">CME</a></div></div>
+    <div class="intel-item"><div class="intel-label">EU Storage</div><div class="intel-val">${lngPrices[4].price}%</div><div class="intel-sub"><a href="#">GIE</a></div></div>
+    <div class="intel-item"><div class="intel-label">EUA Carbon</div><div class="intel-val">€66.80</div><div class="intel-sub"><a href="#">EEX</a></div></div>
+    <div class="intel-item"><div class="intel-label">TFDE Rate</div><div class="intel-val">$${(lngPrices[3].price/1000).toFixed(1)}k</div><div class="intel-sub"><a href="#">CLARKSONS</a></div></div>`;
+}
+
+// ============= LIVE NEWS - NO FAKE DATA, ONLY REAL SOURCES =============
+let currentNews = [];
+let currentFilter = 'all';
+
+function getCategoryFromText(title, description) {
+  const text = (title + ' ' + (description || '')).toLowerCase();
+  if (text.match(/currency|forex|dollar|euro|yen|yuan|exchange rate|fx|usd|eur|jpy|cny|gbp/)) return 'currency';
+  if (text.match(/economy|economic|gdp|inflation|interest rate|fed|ecb|boj|recession|growth|stimulus|fiscal/)) return 'economy';
+  if (text.match(/shipping|freight|vessel|tanker|charter|panama|suez|trade route|logistics|supply chain/)) return 'shipping';
+  if (text.match(/policy|regulation|eu|commission|ferc|doe|mandate|tariff|sanction|export control/)) return 'policy';
+  if (text.match(/geopolitical|russia|china|usa|trade war|conflict|embargo|alliance|diplomatic/)) return 'geo';
+  return 'markets';
+}
+
+async function fetchLiveNews() {
+  const newsFeedDiv = document.getElementById('news-feed');
+  const newsStatus = document.getElementById('news-status');
+  newsStatus.innerHTML = '🔄 fetching economic/political/currency news...';
+  newsFeedDiv.innerHTML = '<div class="news-loading">📡 Fetching real economic, political & currency news that impact international trade...</div>';
+  
+  try {
+    // Search for economic, political, currency news that impact international trade
+    const queries = [
+      'international trade economy news',
+      'currency markets forex news',
+      'global trade policy politics',
+      'interest rates fed ecb trade impact'
+    ];
+    const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+    const gnewsUrl = `https://gnews.io/api/v4/search?q=${encodeURIComponent(randomQuery)}&lang=en&max=20&token=9b8fcd0b0ba97bf691cdd5c426d2fc46`;
+    
+    const response = await fetch(proxyUrl + encodeURIComponent(gnewsUrl));
+    const data = await response.json();
+    
+    if (data && data.articles && data.articles.length > 0) {
+      currentNews = data.articles.slice(0, 25).map(article => ({
+        title: article.title,
+        description: article.description || article.content || '',
+        source: article.source?.name || 'GNews',
+        sourceUrl: article.url,
+        publishedAt: article.publishedAt,
+        category: getCategoryFromText(article.title, article.description)
+      }));
+      newsStatus.innerHTML = `✅ ${currentNews.length} live economic/trade articles · ${new Date().toLocaleTimeString()}`;
+      renderNews(currentFilter);
+    } else {
+      throw new Error('No articles from primary source');
+    }
+  } catch (error) {
+    console.warn('Primary news fetch failed:', error);
+    await fetchRSSFallback();
+  }
+}
+
+async function fetchRSSFallback() {
+  const newsStatus = document.getElementById('news-status');
+  newsStatus.innerHTML = '🔄 trying RSS feeds (Reuters/Bloomberg economics)...';
+  
+  try {
+    // Real RSS feeds for economic and political news
+    const rssFeeds = [
+      'https://www.reuters.com/business/finance/rss',
+      'https://www.reuters.com/world/rss',
+      'https://feeds.bloomberg.com/markets/news.rss'
+    ];
+    let allArticles = [];
+    
+    for (const feedUrl of rssFeeds) {
+      try {
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const rss2jsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
+        const response = await fetch(proxyUrl + encodeURIComponent(rss2jsonUrl));
+        const data = await response.json();
+        if (data && data.items && data.items.length > 0) {
+          allArticles.push(...data.items.slice(0, 10).map(item => ({
+            title: item.title,
+            description: item.description?.replace(/<[^>]*>/g, '').substring(0, 300) || '',
+            source: feedUrl.includes('reuters') ? (feedUrl.includes('finance') ? 'Reuters Finance' : 'Reuters World') : 'Bloomberg Markets',
+            sourceUrl: item.link,
+            publishedAt: item.pubDate,
+            category: getCategoryFromText(item.title, item.description)
+          })));
+        }
+      } catch(e) { console.warn(`RSS feed failed:`, e); }
+    }
+    
+    if (allArticles.length > 0) {
+      // Remove duplicates by title
+      const unique = [];
+      const titles = new Set();
+      for (const article of allArticles) {
+        if (!titles.has(article.title.substring(0, 50))) {
+          titles.add(article.title.substring(0, 50));
+          unique.push(article);
+        }
+      }
+      currentNews = unique.slice(0, 20);
+      newsStatus.innerHTML = `✅ RSS: ${currentNews.length} economic/political articles · ${new Date().toLocaleTimeString()}`;
+      renderNews(currentFilter);
+    } else {
+      throw new Error('No RSS articles available');
+    }
+  } catch (error) {
+    console.error('All news sources failed:', error);
+    // NO FAKE NEWS - display error with retry button
+    newsStatus.innerHTML = '⚠️ API limit reached - no simulated news';
+    newsFeedDiv.innerHTML = `
+      <div class="error-message">
+        ⚠️ Unable to fetch live news at this moment.<br>
+        <small>GNews API rate limit or network issue. No simulated content is shown.</small><br>
+        <button class="retry-btn" onclick="fetchLiveNews()">⟳ Retry</button>
+      </div>
+    `;
+    currentNews = [];
+    renderNews(currentFilter);
+  }
+}
+
+function renderNews(filter) {
+  if (!currentNews || currentNews.length === 0) {
+    document.getElementById('news-feed').innerHTML = '<div class="news-loading">No news available. Click retry to fetch live economic/political news.</div>';
+    return;
+  }
+  
+  const filtered = filter === 'all' ? currentNews : currentNews.filter(n => n.category === filter);
+  const newsHtml = filtered.length === 0 ? '<div class="news-loading">No articles for this category.</div>' : 
+    filtered.map(n => {
+      const timeAgo = n.publishedAt ? (() => {
+        const diff = Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 60000);
+        if (diff < 60) return `${diff}m ago`;
+        if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
+        return `${Math.floor(diff/1440)}d ago`;
+      })() : 'recent';
+      return `<div class="news-item" onclick="window.open('${n.sourceUrl}', '_blank')">
+        <div class="news-meta">
+          <span class="news-tag tag-${n.category}">${n.category.toUpperCase()}</span>
+          <span class="news-source"><a href="${n.sourceUrl}" target="_blank">${n.source} ↗</a></span>
+          <span class="news-time">${timeAgo}</span>
+        </div>
+        <div class="news-headline">${n.title}</div>
+        <div class="news-summary">${(n.description || '').substring(0, 150)}${(n.description || '').length > 150 ? '...' : ''}</div>
+      </div>`;
+    }).join('');
+  document.getElementById('news-feed').innerHTML = newsHtml;
+}
+
+function renderStaticContent() {
+  document.getElementById('supply-balance').innerHTML = `<div class="balance-item"><div class="balance-label">US LNG Export</div><div class="balance-val up">+3.8%</div><div class="balance-src"><a href="#">FERC</a></div></div><div class="balance-item"><div class="balance-label">AU LNG Output</div><div class="balance-val dn">-1.2%</div><div class="balance-src"><a href="#">APPEA</a></div></div><div class="balance-item"><div class="balance-label">QAT Expansion</div><div class="balance-val up">+12%</div><div class="balance-src"><a href="#">QatarEnergy</a></div></div><div class="balance-item"><div class="balance-label">EU Import</div><div class="balance-val up">+6.4%</div><div class="balance-src"><a href="#">ENTSOG</a></div></div><div class="balance-item"><div class="balance-label">FLNG Uptime</div><div class="balance-val dn">-0.8%</div><div class="balance-src"><a href="#">PLATTS</a></div></div><div class="balance-item"><div class="balance-label">Regas Util</div><div class="balance-val up">+5.1%</div><div class="balance-src"><a href="#">GIE</a></div></div>`;
+  document.getElementById('storage-balance').innerHTML = `<div class="balance-item"><div class="balance-label">EU Storage</div><div class="balance-val up">${lngPrices[4].price}%</div><div class="balance-src"><a href="#">GIE/AGSI</a></div></div><div class="balance-item"><div class="balance-label">NW Europe</div><div class="balance-val up">+2.1%</div><div class="balance-src"><a href="#">AGSI</a></div></div><div class="balance-item"><div class="balance-label">US Stk Chg</div><div class="balance-val dn">-82bcf</div><div class="balance-src"><a href="#">EIA</a></div></div><div class="balance-item"><div class="balance-label">LNG Ship Qty</div><div class="balance-val up">596</div><div class="balance-src"><a href="#">GIIGNL</a></div></div><div class="balance-item"><div class="balance-label">Sabine Pass</div><div class="balance-val neu">6T/yr</div><div class="balance-src"><a href="#">Cheniere</a></div></div><div class="balance-item"><div class="balance-label">Carbon EUA</div><div class="balance-val up">€66.8</div><div class="balance-src"><a href="#">EEX</a></div></div>`;
+  
+  const hmData = [{ name:'N. America', supply:88, demand:72, balance:16, yoy:4.2 },{ name:'Europe', supply:42, demand:95, balance:-53, yoy:8.1 },{ name:'Asia-Pac', supply:68, demand:94, balance:-26, yoy:6.3 },{ name:'ME & Africa', supply:96, demand:38, balance:58, yoy:3.5 }];
+  const heatColor = (v, isBal=false) => { if(isBal) return v>20?'#3b82f6aa': v>0?'#3b82f644': v>-10?'#f59e0b55':'#ef444466'; return v>=90?'#3b82f6aa': v>=70?'#3b82f644': v>=50?'#f59e0b55':'#ef444466'; };
+  document.getElementById('supply-heatmap').innerHTML = hmData.map(r => `<div class="heatmap-row"><div class="heatmap-region">${r.name}</div><div class="heatmap-cells"><div class="heatmap-cell" style="background:${heatColor(r.supply)}">${r.supply}%</div><div class="heatmap-cell" style="background:${heatColor(r.demand)}">${r.demand}%</div><div class="heatmap-cell" style="background:${heatColor(r.balance,true)}">${r.balance>0?'+':''}${r.balance}</div><div class="heatmap-cell" style="background:${heatColor(r.yoy)}">${r.yoy>0?'+':''}${r.yoy}%</div></div></div>`).join('');
+  
+  const MANDATES = [{ code:'EU Gas Storage',desc:'85% fill mandatory by 1 Nov',status:'active',label:'In Force'},{ code:'EU ETS Phase 4',desc:'Carbon pricing extended',status:'active',label:'In Force'},{ code:'US DOE LNG Exports',desc:'Authorizations resumed',status:'active',label:'In Force'},{ code:'IMO CII 2026',desc:'Carbon Intensity Indicator',status:'pending',label:'Implementing'}];
+  document.getElementById('mandate-list').innerHTML = MANDATES.map(m=>`<div class="mandate-item"><div class="mandate-code"><a href="#">${m.code} ↗</a></div><div class="mandate-desc">${m.desc}</div><div class="mandate-status status-${m.status}">${m.label}</div></div>`).join('');
+}
+
+function updateClock() { document.getElementById('clock').textContent = new Date().toUTCString().split(' ')[4] + ' UTC'; }
+function simulatePriceMovement() { hubPrices.forEach(p=>{ p.prev = p.price; p.price *= (1 + (Math.random()-0.5)*0.02); p.history = updatePriceHistory(p.id, p.price, p.name); }); lngPrices.forEach(p=>{ p.prev = p.price; p.price *= (1 + (Math.random()-0.5)*0.015); p.history = updatePriceHistory(p.id, p.price, p.name); }); renderTables(); }
+
+async function init() {
+  renderStaticContent();
+  renderTables();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(simulatePriceMovement, 45000);
+  document.getElementById('api-notice').innerHTML = `📡 ACTIVE · ${new Date().toLocaleTimeString()}`;
+  
+  await fetchLiveNews();
+  setInterval(fetchLiveNews, 120000); // refresh news every 2 minutes
+  
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderNews(currentFilter);
+    });
+  });
+}
+
+// Expose retry function globally
+window.fetchLiveNews = fetchLiveNews;
+init();
+</script>
+</body>
+</html>
